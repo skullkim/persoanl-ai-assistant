@@ -16,6 +16,7 @@ from config.env_setting import settings
 from service.get_exchange_rate_service import get_exchange_rate_service
 from service.gmail_service import get_emails_from_sender
 from service.news_service import get_news_from_emails
+from service.youtube_service import get_youtube_videos as get_youtube_videos_service
 
 app = FastAPI()
 add_cors_middleware(app)
@@ -27,44 +28,8 @@ def get_news(offsetDays: int = 0, countDays: int = 3):
 
 @app.get("/api/youtube/videos", response_model=List[YouTubeVideoResponse])
 def get_youtube_videos(offsetDays: int = 0, countDays: int = 3):
-    """유튜브 요약본 조회"""
-    # TODO: 실제 유튜브 데이터 연동 필요
-    mock_youtube_data = [
-        {
-            "id": "youtube1",
-            "title": "2024년 하반기 투자 전략, 지금 주목해야 할 섹터는?",
-            "channelName": "슈카월드",
-            "thumbnailUrl": "https://picsum.photos/seed/youtube1/480/360",
-            "videoUrl": "https://www.youtube.com/watch?v=example1",
-            "date": "2024.07.26",
-            "summary": """
-- 하반기 시장 변동성 확대 예상
-- 인플레이션 둔화 및 금리 인하 기대감 공존
-- AI, 반도체 섹터의 지속적인 성장 모멘텀
-- 신재생에너지 관련주 주목 필요
-        """,
-            "highlights": ["하반기 시장", "금리 인하", "AI", "신재생에너지"],
-            "sentiment": "Neutral"
-        },
-        {
-            "id": "youtube2",
-            "title": "미 연준의 깜짝 발표! 시장은 어떻게 반응했나?",
-            "channelName": "삼프로TV",
-            "thumbnailUrl": "https://picsum.photos/seed/youtube2/480/360",
-            "videoUrl": "https://www.youtube.com/watch?v=example2",
-            "date": "2024.07.25",
-            "summary": """
-- 연준, 기준금리 동결 결정
-- 예상보다 매파적인 발언으로 시장 단기 충격
-- 달러 강세, 국채 금리 상승
-- 향후 지표에 따른 조건부 인하 가능성 시사
-        """,
-            "highlights": ["기준금리 동결", "매파적 발언", "달러 강세"],
-            "sentiment": "Negative"
-        }
-    ]
-
-    return mock_youtube_data
+    """유튜브 요약본 조회 - YouTube Data API에서 수집"""
+    return get_youtube_videos_service(offset_days=offsetDays, count_days=countDays)
 
 @app.get("/api/investment/exchange-rate", response_model=ExchangeRateResponse)
 def get_exchange_rate():

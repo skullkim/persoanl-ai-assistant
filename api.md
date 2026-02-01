@@ -1,4 +1,4 @@
-## 1. 뉴스 피드 (News API)
+ ## 1. 뉴스 피드 (News API)
 날짜 기반 무한 스크롤을 위해 `offsetDays`와 `countDays` 파라미터를 사용합니다.
 
 ### GET /api/news
