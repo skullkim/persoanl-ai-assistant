@@ -7,48 +7,28 @@ from api.response.fear_greed_index_response import FearGreedIndexResponse
 from api.response.market_index_response import MarketIndexResponse
 from api.response.news_item_response import NewsItemResponse
 from api.response.youtube_video_response import YouTubeVideoResponse
+from api.response.email_response import EmailResponse
 from config.cors import add_cors_middleware
 import typer
 import uvicorn
 import os
 from config.env_setting import settings
 from service.get_exchange_rate_service import get_exchange_rate_service
+from service.gmail_service import get_emails_from_sender
+from service.news_service import get_news_from_emails
 
 app = FastAPI()
 add_cors_middleware(app)
 
 @app.get("/api/news", response_model=List[NewsItemResponse])
-def get_news():
-    APP_ENV = os.getenv("APP_ENV", "prod")
-    print(f"APP_ENV: {settings.CORS_ORIGIN}")
-    """뉴스 피드 조회"""
-    mock_news_data = [
-        {
-            "id": "news1",
-            "title": "글로벌 증시, 기술주 중심으로 상승 마감",
-            "summary": "간밤 뉴욕 증시는 주요 기술 기업들의 실적 호조에 힘입어 상승 마감했습니다.",
-            "content": "전체 뉴스 본문입니다. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-            "category": "Economy",
-            "imageUrl": "https://picsum.photos/seed/news1/800/600",
-            "date": "2024.07.28",
-            "source": "머니투데이"
-        },
-        {
-            "id": "news2",
-            "title": "차세대 AI 모델, 인간 수준의 언어 이해 능력 선보여",
-            "summary": "새롭게 공개된 '알파-7' 모델이 복잡한 문맥 파악 및 추론에서 뛰어난 성능을 보였습니다.",
-            "content": "알파-7은 자연어 처리 분야의 새로운 지평을 열었습니다. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-            "category": "Tech",
-            "imageUrl": "https://picsum.photos/seed/news2/800/600",
-            "date": "2024.07.27",
-            "source": "전자신문"
-        }
-    ]
-    return mock_news_data
+def get_news(offsetDays: int = 0, countDays: int = 3):
+    """뉴스 피드 조회 - Gmail 뉴스레터에서 수집"""
+    return get_news_from_emails(offset_days=offsetDays, count_days=countDays)
 
 @app.get("/api/youtube/videos", response_model=List[YouTubeVideoResponse])
-def get_youtube_videos():
+def get_youtube_videos(offsetDays: int = 0, countDays: int = 3):
     """유튜브 요약본 조회"""
+    # TODO: 실제 유튜브 데이터 연동 필요
     mock_youtube_data = [
         {
             "id": "youtube1",
@@ -112,6 +92,13 @@ def get_fear_greed_index():
       "value": 68,
       "label": "Greed"
     }
+
+# Gmail 이메일 조회
+@app.get("/api/emails", response_model=List[EmailResponse])
+def get_emails(sender: str, max_results: int = 10):
+    """특정 발신자의 이메일 목록 조회"""
+    return get_emails_from_sender(sender, max_results)
+
 
 # 기본 루트 엔드포인트 (선택 사항)
 @app.get("/")
