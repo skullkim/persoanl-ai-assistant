@@ -19,3 +19,8 @@ google-auth-oauthlib>=1.0.0
 
 # YouTube
 youtube-transcript-api>=0.6.0
+
+# Database
+asyncpg>=0.29.0
+sqlmodel>=0.0.22
+pgvector>=0.3.0

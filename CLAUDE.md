@@ -27,6 +27,9 @@
 - api/: 엔드포인트 정의 및 요청 유효성 검사.
 - services/: 비즈니스 로직 및 LangChain을 활용한 AI 워크플로우 (요약 -> 분석).
 - external/: DB, 유튜브 자막(youtube-transcript-api), 이메일, PDF 파싱, 등 외부 리소스 조회 / 수정 모듈
+  - external/db: DB 관련 파일
+    - external/db/mode: ORM model
+    - external/db/repository: ORM model 별 CRUD 메서드
 - config/: 설정 파일
 - batch/: 데이터 ETL 관련 배치
 
