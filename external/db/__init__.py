@@ -9,13 +9,6 @@ logger = logging.getLogger(__name__)
 
 _engine = None
 
-# 연결 풀 설정
-POOL_SIZE = 5  # 기본 연결 풀 크기
-MAX_OVERFLOW = 10  # 풀 초과 시 추가 생성 가능한 연결 수
-POOL_TIMEOUT = 30  # 연결 대기 타임아웃 (초)
-POOL_RECYCLE = 1800  # 연결 재사용 주기 (초, 30분)
-CONNECT_TIMEOUT = 10  # DB 연결 타임아웃 (초)
-
 
 def get_engine():
     """비동기 데이터베이스 엔진을 반환합니다."""
@@ -27,14 +20,14 @@ def get_engine():
         _engine = create_async_engine(
             db_url,
             echo=False,
-            pool_size=POOL_SIZE,
-            max_overflow=MAX_OVERFLOW,
-            pool_timeout=POOL_TIMEOUT,
-            pool_recycle=POOL_RECYCLE,
-            pool_pre_ping=True,  # 연결 사용 전 유효성 검사
+            pool_size=settings.DB_POOL_SIZE,
+            max_overflow=settings.DB_MAX_OVERFLOW,
+            pool_timeout=settings.DB_POOL_TIMEOUT,
+            pool_recycle=settings.DB_POOL_RECYCLE,
+            pool_pre_ping=True,
             connect_args={
-                "timeout": CONNECT_TIMEOUT,
-                "command_timeout": 60,  # 쿼리 실행 타임아웃 (초)
+                "timeout": settings.DB_CONNECT_TIMEOUT,
+                "command_timeout": settings.DB_COMMAND_TIMEOUT,
             },
         )
     return _engine

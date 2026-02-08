@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     DB_USER: str = "postgres"
     DB_PASSWORD: str = ""
 
+    # Database Pool
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
+    DB_CONNECT_TIMEOUT: int = 10
+    DB_COMMAND_TIMEOUT: int = 60
+
     @property
     def DATABASE_URL(self) -> str:
         """데이터베이스 연결 URL을 생성합니다."""
