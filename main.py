@@ -1,6 +1,8 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Optional
+import logging
 
 from api.response.exchange_rate_response import ExchangeRateResponse
 from api.response.fear_greed_index_response import FearGreedIndexResponse
@@ -17,8 +19,33 @@ from service.get_exchange_rate_service import get_exchange_rate_service
 from service.gmail_service import get_emails_from_sender
 from service.news_service import get_news_from_emails
 from service.youtube_service import get_youtube_videos as get_youtube_videos_service
+from external.db import init_db, close_db, check_db_health
 
-app = FastAPI()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """애플리케이션 생명주기 관리"""
+    # 시작 시
+    logger.info("서버 시작 중...")
+    try:
+        await init_db()
+        logger.info("데이터베이스 초기화 완료")
+    except Exception as e:
+        logger.error(f"데이터베이스 초기화 실패: {e}")
+        raise
+
+    yield
+
+    # 종료 시
+    logger.info("서버 종료 중...")
+    await close_db()
+    logger.info("서버 종료 완료")
+
+
+app = FastAPI(lifespan=lifespan)
 add_cors_middleware(app)
 
 @app.get("/api/news", response_model=List[NewsItemResponse])
@@ -69,3 +96,19 @@ def get_emails(sender: str, max_results: int = 10):
 @app.get("/")
 def read_root():
     return {"message": "Financial Investment Assistant API"}
+
+
+@app.get("/health")
+async def health_check():
+    """서버 및 데이터베이스 상태 확인"""
+    db_health = await check_db_health()
+
+    is_healthy = db_health["status"] == "healthy"
+
+    return {
+        "status": "healthy" if is_healthy else "unhealthy",
+        "components": {
+            "server": "running",
+            "database": db_health
+        }
+    }

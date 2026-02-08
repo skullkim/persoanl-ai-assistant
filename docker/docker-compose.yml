@@ -6,14 +6,14 @@ services:
     container_name: financial-assistant-db
     restart: unless-stopped
     ports:
-      - "${DB_PORT}"
+      - "${DB_PORT}:5432"
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       TZ: Asia/Seoul
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
@@ -21,6 +21,3 @@ services:
       timeout: 5s
       retries: 5
 
-volumes:
-  postgres_data:
-    name: financial-assistant-postgres-data
