@@ -24,6 +24,6 @@ class Embedding(SQLModel, table=True):
     source_id: int
     content: str
     embedding: list[float] | None = Field(default=None, sa_column=Column(Vector(1024)))
-    metadata: dict | None = Field(default=None, sa_column=Column(JSONB))
+    extra_data: dict | None = Field(default=None, sa_column=Column("metadata", JSONB))
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
