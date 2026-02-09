@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlmodel import SQLModel, Field, Column, UniqueConstraint
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Index
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 class Embedding(SQLModel, table=True):
@@ -23,6 +24,6 @@ class Embedding(SQLModel, table=True):
     source_id: int
     content: str
     embedding: list[float] | None = Field(default=None, sa_column=Column(Vector(1024)))
-    metadata: dict | None = Field(default=None, sa_type_kwargs={"as_json": True})
+    metadata: dict | None = Field(default=None, sa_column=Column(JSONB))
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
