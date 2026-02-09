@@ -1,5 +1,7 @@
 from datetime import datetime
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import String
 
 
 class Video(SQLModel, table=True):
@@ -14,7 +16,7 @@ class Video(SQLModel, table=True):
     video_url: str | None = None
     upload_date: str | None = None
     summary: str | None = None
-    highlights: list[str] = Field(default_factory=list, sa_type_kwargs={"as_array": True})
+    highlights: list[str] | None = Field(default=None, sa_column=Column(ARRAY(String)))
     source: str | None = None
     sentiment: str | None = None
     created_at: datetime = Field(default_factory=datetime.now)
