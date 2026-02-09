@@ -1,4 +1,4 @@
-from api.response.exchange_rate_response import ExchangeRateResponse
+from controller.model.response.exchange_rate_response import ExchangeRateResponse
 from external.exchang_rate import get_latest_exchange_rate
 
 def get_exchange_rate_service():

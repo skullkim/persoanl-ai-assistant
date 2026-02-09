@@ -32,6 +32,7 @@
     - external/db/repository: ORM model 별 CRUD 메서드
 - config/: 설정 파일
 - batch/: 데이터 ETL 관련 배치
+- controller/: 외부 요청을 받아 처리하는 컨트롤러. (각 컨트롤러 하나 당 하나의 파일 사용, 이름은 XXXController라는 컨벤션 사용)
 
 5. 데이터베이스
 - 데이터베이스 DDL은 db.sql에 존재
