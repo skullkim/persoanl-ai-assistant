@@ -26,21 +26,6 @@ def _extract_highlights(transcript: str, max_keywords: int = 5) -> list[str]:
     return []
 
 
-def _analyze_sentiment(transcript: str) -> str:
-    """자막 내용의 투자 관점 감성을 분석합니다."""
-    # TODO: LLM을 사용한 감성 분석으로 개선 필요
-    # 현재는 기본값 반환
-    return "Neutral"
-
-
-def _generate_summary(transcript: str) -> str:
-    """자막 내용을 요약합니다."""
-    # TODO: LLM을 사용한 요약으로 개선 필요
-    if not transcript:
-        return "자막을 가져올 수 없습니다."
-
-    return transcript
-
 
 def _video_to_response(video: dict, transcript: str | None) -> dict:
     """영상 데이터를 API 응답 형식으로 변환합니다."""
@@ -53,9 +38,9 @@ def _video_to_response(video: dict, transcript: str | None) -> dict:
         "thumbnailUrl": video["thumbnail_url"],
         "videoUrl": video["video_url"],
         "date": date_str,
-        "summary": _generate_summary(transcript) if transcript else "자막을 가져올 수 없습니다.",
+        "subtitle": transcript if transcript else None,
+        "summary": None,
         "highlights": _extract_highlights(transcript) if transcript else [],
-        "sentiment": _analyze_sentiment(transcript) if transcript else "Neutral",
     }
 
 

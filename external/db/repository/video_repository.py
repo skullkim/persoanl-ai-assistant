@@ -29,9 +29,9 @@ class VideoRepository:
                     thumbnail_url=video.get("thumbnailUrl", ""),
                     video_url=video.get("videoUrl", ""),
                     upload_date=video.get("date", ""),
-                    summary=video.get("summary", ""),
+                    subtitle=video.get("subtitle"),
+                    summary=video.get("summary"),
                     highlights=video.get("highlights", []),
-                    sentiment=video.get("sentiment", "Neutral"),
                 )
                 session.add(v)
                 saved += 1

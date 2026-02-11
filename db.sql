@@ -37,10 +37,10 @@ CREATE TABLE video (
   thumbnail_url TEXT,
   video_url TEXT,
   upload_date VARCHAR,
+  subtitle TEXT,
   summary TEXT,
   highlights TEXT[],
   source VARCHAR,
-  sentiment VARCHAR,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -52,10 +52,10 @@ COMMENT ON COLUMN video.channel_name IS '유튜브 채널명';
 COMMENT ON COLUMN video.thumbnail_url IS '썸네일 이미지 URL';
 COMMENT ON COLUMN video.video_url IS '영상 URL';
 COMMENT ON COLUMN video.upload_date IS '영상 업로드일';
+COMMENT ON COLUMN video.subtitle IS '영상 자막';
 COMMENT ON COLUMN video.summary IS '영상 내용 요약';
 COMMENT ON COLUMN video.highlights IS '주요 키워드 배열';
 COMMENT ON COLUMN video.source IS '영상 출처';
-COMMENT ON COLUMN video.sentiment IS '감성 분석 결과 (Positive, Negative, Neutral)';
 COMMENT ON COLUMN video.created_at IS '레코드 생성 시간';
 COMMENT ON COLUMN video.updated_at IS '레코드 수정 시간';
 

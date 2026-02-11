@@ -41,7 +41,7 @@ def _email_to_news_item(email: dict) -> tuple[dict, datetime | None]:
     news_item = {
         "id": email["id"],
         "title": email.get("subject", "(제목 없음)"),
-        "summary": email.get("snippet", ""),
+        "summary": None,
         "content": email.get("body", ""),
         "category": config["category"],
         "date": date_str,

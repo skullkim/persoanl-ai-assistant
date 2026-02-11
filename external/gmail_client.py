@@ -59,7 +59,7 @@ def get_gmail_service():
             creds = flow.run_local_server(port=0)
             _save_token(creds, client_config)
 
-    return build("gmail", "v1", credentials=creds)
+    return build("gmail", "v1", credentials=creds, cache_discovery=False)
 
 
 def fetch_emails(sender_email: str, max_results: int = 10) -> list[dict]:

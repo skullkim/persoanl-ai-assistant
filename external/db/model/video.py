@@ -15,9 +15,9 @@ class Video(SQLModel, table=True):
     thumbnail_url: str | None = None
     video_url: str | None = None
     upload_date: str | None = None
+    subtitle: str | None = None
     summary: str | None = None
     highlights: list[str] | None = Field(default=None, sa_column=Column(ARRAY(String)))
     source: str | None = None
-    sentiment: str | None = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)

@@ -8,6 +8,6 @@ class YouTubeVideoResponse(BaseModel):
     thumbnailUrl: str
     videoUrl: str
     date: str
-    summary: str
+    subtitle: str | None
+    summary: str | None
     highlights: List[str]
-    sentiment: str
