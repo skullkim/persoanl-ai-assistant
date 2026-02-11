@@ -36,13 +36,9 @@ def _analyze_sentiment(transcript: str) -> str:
 def _generate_summary(transcript: str) -> str:
     """자막 내용을 요약합니다."""
     # TODO: LLM을 사용한 요약으로 개선 필요
-    # 현재는 자막 앞부분만 반환
     if not transcript:
         return "자막을 가져올 수 없습니다."
 
-    # 앞부분 500자 정도만 반환
-    if len(transcript) > 500:
-        return transcript[:500] + "..."
     return transcript
 
 
