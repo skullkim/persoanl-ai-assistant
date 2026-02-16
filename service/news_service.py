@@ -73,13 +73,17 @@ def get_news_from_emails(offset_days: int = 0, count_days: int = 3) -> list[dict
     end_date = today - timedelta(days=offset_days) + timedelta(days=1)  # 해당 날짜 끝까지 포함
     start_date = end_date - timedelta(days=count_days)
 
+    # Gmail 검색용 날짜 (YYYY/MM/DD 형식)
+    after_str = start_date.strftime("%Y/%m/%d")
+    before_str = end_date.strftime("%Y/%m/%d")
+
     senders = [s.strip() for s in sender_emails.split(",") if s.strip()]
     all_news = []
 
     for sender in senders:
         try:
-            # 충분한 이메일을 가져와서 필터링
-            emails = fetch_emails(sender, max_results=20)
+            emails = fetch_emails(sender, max_results=20,
+                                  after_date=after_str, before_date=before_str)
             for email in emails:
                 news_item, dt = _email_to_news_item(email)
                 if _is_in_date_range(dt, start_date, end_date):

@@ -30,44 +30,41 @@ def get_channel_id_from_handle(handle: str) -> str | None:
     return None
 
 
-def get_channel_upload_playlist_id(channel_id: str) -> str | None:
-    """채널의 업로드 플레이리스트 ID를 조회합니다."""
-    service = get_youtube_service()
+def fetch_channel_videos(channel_handle: str, max_results: int = 10,
+                         published_after: str | None = None,
+                         published_before: str | None = None) -> list[dict]:
+    """채널의 영상 목록을 가져옵니다.
 
-    response = service.channels().list(
-        part="contentDetails",
-        id=channel_id
-    ).execute()
-
-    items = response.get("items", [])
-    if items:
-        return items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
-    return None
-
-
-def fetch_channel_videos(channel_handle: str, max_results: int = 10) -> list[dict]:
-    """채널의 최신 영상 목록을 가져옵니다."""
+    Args:
+        channel_handle: 채널 핸들 (@username)
+        max_results: 최대 결과 수
+        published_after: 이 날짜 이후 (ISO 8601 형식, e.g. 2026-01-01T00:00:00Z)
+        published_before: 이 날짜 이전 (ISO 8601 형식)
+    """
     channel_id = get_channel_id_from_handle(channel_handle)
     if not channel_id:
         raise ValueError(f"채널을 찾을 수 없습니다: {channel_handle}")
 
-    playlist_id = get_channel_upload_playlist_id(channel_id)
-    if not playlist_id:
-        raise ValueError(f"업로드 플레이리스트를 찾을 수 없습니다: {channel_handle}")
-
     service = get_youtube_service()
 
-    # 플레이리스트에서 영상 목록 조회
-    response = service.playlistItems().list(
-        part="snippet",
-        playlistId=playlist_id,
-        maxResults=max_results
-    ).execute()
+    search_params = {
+        "part": "snippet",
+        "channelId": channel_id,
+        "type": "video",
+        "order": "date",
+        "maxResults": max_results,
+    }
+    if published_after:
+        search_params["publishedAfter"] = published_after
+    if published_before:
+        search_params["publishedBefore"] = published_before
+
+    response = service.search().list(**search_params).execute()
 
     videos = []
     for item in response.get("items", []):
         snippet = item["snippet"]
-        video_id = snippet["resourceId"]["videoId"]
+        video_id = item["id"]["videoId"]
 
         videos.append({
             "id": video_id,

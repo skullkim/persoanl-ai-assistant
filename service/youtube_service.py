@@ -12,13 +12,6 @@ def _parse_published_date(published_at: str) -> tuple[str, datetime | None]:
         return published_at, None
 
 
-def _is_in_date_range(dt: datetime | None, start_date: datetime, end_date: datetime) -> bool:
-    """날짜가 지정된 범위 내에 있는지 확인합니다."""
-    if dt is None:
-        return False
-    return start_date <= dt < end_date
-
-
 def _extract_highlights(transcript: str, max_keywords: int = 5) -> list[str]:
     """자막에서 주요 키워드를 추출합니다. (간단한 구현)"""
     # TODO: LLM을 사용한 키워드 추출로 개선 필요
@@ -60,17 +53,20 @@ def get_youtube_videos(offset_days: int = 0, count_days: int = 3) -> list[dict]:
     end_date = today - timedelta(days=offset_days) + timedelta(days=1)
     start_date = end_date - timedelta(days=count_days)
 
+    # YouTube 검색용 날짜 (ISO 8601 형식)
+    after_str = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+    before_str = end_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+
     channels = [c.strip() for c in channel_handles.split(",") if c.strip()]
     all_videos = []
 
     for channel in channels:
         try:
-            videos = fetch_channel_videos(channel, max_results=20)
+            videos = fetch_channel_videos(channel, max_results=20,
+                                          published_after=after_str,
+                                          published_before=before_str)
 
             for video in videos:
-                _, dt = _parse_published_date(video["published_at"])
-                if not _is_in_date_range(dt, start_date, end_date):
-                    continue
 
                 # 자막 가져오기
                 transcript = fetch_video_transcript(video["id"])

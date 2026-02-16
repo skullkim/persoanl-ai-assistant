@@ -62,11 +62,24 @@ def get_gmail_service():
     return build("gmail", "v1", credentials=creds, cache_discovery=False)
 
 
-def fetch_emails(sender_email: str, max_results: int = 10) -> list[dict]:
-    """특정 발신자의 이메일 목록을 가져옵니다."""
+def fetch_emails(sender_email: str, max_results: int = 10,
+                  after_date: str | None = None, before_date: str | None = None) -> list[dict]:
+    """특정 발신자의 이메일 목록을 가져옵니다.
+
+    Args:
+        sender_email: 발신자 이메일 주소
+        max_results: 최대 결과 수
+        after_date: 이 날짜 이후 (YYYY/MM/DD 형식)
+        before_date: 이 날짜 이전 (YYYY/MM/DD 형식)
+    """
     service = get_gmail_service()
 
     query = f"from:{sender_email}"
+    if after_date:
+        query += f" after:{after_date}"
+    if before_date:
+        query += f" before:{before_date}"
+
     results = service.users().messages().list(
         userId="me",
         q=query,
