@@ -7,6 +7,16 @@ class Settings(BaseSettings):
     NEWS_SENDER_EMAILS: str = ""  # 콤마로 구분된 발신자 이메일 목록
     YOUTUBE_API_KEY: str = ""
     YOUTUBE_CHANNEL_HANDLES: str = ""  # 콤마로 구분된 채널 핸들 (@channel)
+    RSS_FEED_URLS: str = ""  # 콤마로 구분된 RSS 피드 URL
+
+    # Slack
+    SLACK_WEBHOOK_URL: str = ""
+    SLACK_SUMMARY_WEBHOOK_URL: str = ""
+
+    # Ollama
+    OLLAMA_HOST: str = "http://localhost:11434"
+    LLM_MODEL: str = "qwen2.5:32b"
+    EMBED_MODEL: str = "bge-m3"
 
     # Database
     DB_HOST: str = "localhost"

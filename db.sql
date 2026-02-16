@@ -7,7 +7,6 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE news (
   id BIGSERIAL PRIMARY KEY,
   title TEXT NOT NULL,
-  summary TEXT,
   content TEXT,
   category VARCHAR,
   upload_date VARCHAR,
@@ -16,10 +15,31 @@ CREATE TABLE news (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ============================================
+-- 뉴스 일일 요약
+-- ============================================
+CREATE TABLE news_summary (
+  id BIGSERIAL PRIMARY KEY,
+  summary_date VARCHAR NOT NULL,
+  category VARCHAR,
+  summary TEXT NOT NULL,
+  source_news_ids BIGINT[],
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE news_summary IS '뉴스 일일 요약';
+COMMENT ON COLUMN news_summary.id IS '요약 고유 식별자';
+COMMENT ON COLUMN news_summary.summary_date IS '요약 대상 날짜 (YYYY.MM.DD)';
+COMMENT ON COLUMN news_summary.category IS '카테고리 (Economy, Tech 등)';
+COMMENT ON COLUMN news_summary.summary IS '일일 요약 내용';
+COMMENT ON COLUMN news_summary.source_news_ids IS '요약에 포함된 news ID 배열';
+COMMENT ON COLUMN news_summary.created_at IS '레코드 생성 시간';
+COMMENT ON COLUMN news_summary.updated_at IS '레코드 수정 시간';
+
 COMMENT ON TABLE news IS '뉴스레터 원문 데이터';
 COMMENT ON COLUMN news.id IS '뉴스 고유 식별자';
 COMMENT ON COLUMN news.title IS '뉴스 제목';
-COMMENT ON COLUMN news.summary IS '뉴스 요약';
 COMMENT ON COLUMN news.content IS '뉴스 본문';
 COMMENT ON COLUMN news.category IS '카테고리 (Economy, Tech 등)';
 COMMENT ON COLUMN news.upload_date IS '뉴스 발행일';

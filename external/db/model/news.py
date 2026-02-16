@@ -9,7 +9,6 @@ class News(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     title: str
-    summary: str | None = None
     content: str | None = None
     category: str | None = None
     upload_date: str | None = None

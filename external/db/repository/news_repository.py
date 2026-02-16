@@ -35,7 +35,6 @@ class NewsRepository:
             try:
                 news = News(
                     title=item["title"],
-                    summary=item.get("summary", ""),
                     content=item.get("content", ""),
                     category=item.get("category", ""),
                     upload_date=item.get("date", ""),
@@ -68,6 +67,17 @@ class NewsRepository:
             .where(News.category == category)
             .order_by(News.created_at.desc())
             .limit(limit)
+        )
+        result = await session.exec(stmt)
+        return result.all()
+
+    @staticmethod
+    async def find_by_upload_date(upload_date: str, session: AsyncSession) -> list[News]:
+        """업로드 날짜로 뉴스를 조회합니다."""
+        stmt = (
+            select(News)
+            .where(News.upload_date == upload_date)
+            .order_by(News.created_at.desc())
         )
         result = await session.exec(stmt)
         return result.all()
