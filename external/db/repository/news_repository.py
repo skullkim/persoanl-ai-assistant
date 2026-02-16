@@ -7,6 +7,16 @@ class NewsRepository:
     """뉴스 CRUD 레포지토리"""
 
     @staticmethod
+    async def exists_by_title_and_upload_date(title: str, upload_date: str, session: AsyncSession) -> bool:
+        """title과 upload_date로 중복 여부를 확인합니다."""
+        stmt = select(News.id).where(
+            News.title == title,
+            News.upload_date == upload_date
+        ).limit(1)
+        result = await session.exec(stmt)
+        return result.first() is not None
+
+    @staticmethod
     async def save(news: News, session: AsyncSession) -> News:
         """뉴스를 저장합니다."""
         session.add(news)

@@ -1,7 +1,7 @@
 """
 초기 데이터 수집 배치
 
-한 달 이전부터 오늘까지의 뉴스 피드와 유튜브 영상을 수집하여 데이터베이스에 저장합니다.
+한 달 이전부터 오늘까지의 뉴스 피드를 수집하여 데이터베이스에 저장합니다.
 최초 1회만 실행합니다.
 
 사용법:
@@ -14,10 +14,8 @@ import asyncio
 import argparse
 from datetime import datetime
 
-from service.news_service import get_news_from_emails
-from service.youtube_service import get_youtube_videos
+from service.news_service import get_news_from_emails, save_news_if_not_exists
 from external.db import init_db, close_db, transactional
-from external.db.repository import NewsRepository, VideoRepository
 
 
 @transactional
@@ -26,18 +24,7 @@ async def collect_news_for_day(offset_days: int, session=None) -> int:
     news_items = get_news_from_emails(offset_days=offset_days, count_days=1)
 
     if news_items:
-        saved = await NewsRepository.save_all(news_items, session)
-        return saved
-    return 0
-
-
-@transactional
-async def collect_youtube_for_day(offset_days: int, session=None) -> int:
-    """특정 일자의 유튜브 영상을 수집하여 저장합니다."""
-    videos = get_youtube_videos(offset_days=offset_days, count_days=1)
-
-    if videos:
-        saved = await VideoRepository.save_all(videos, session)
+        saved = await save_news_if_not_exists(news_items, session)
         return saved
     return 0
 
@@ -49,7 +36,6 @@ async def run_initial_batch(days: int = 30):
     print(f"=== {days}일 전부터 오늘까지 수집 ===\n")
 
     total_news = 0
-    total_youtube = 0
 
     try:
         await init_db()
@@ -59,19 +45,15 @@ async def run_initial_batch(days: int = 30):
             print(f"[Day -{offset}] 수집 중...")
 
             news_count = await collect_news_for_day(offset)
-            youtube_count = await collect_youtube_for_day(offset)
-
             total_news += news_count
-            total_youtube += youtube_count
 
-            print(f"[Day -{offset}] 뉴스: {news_count}개, 유튜브: {youtube_count}개")
+            print(f"[Day -{offset}] 뉴스: {news_count}개")
 
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
 
         print(f"\n=== 초기 데이터 수집 완료 ===")
         print(f"  - 총 뉴스: {total_news}개")
-        print(f"  - 총 유튜브: {total_youtube}개")
         print(f"  - 소요시간: {duration:.2f}초")
 
     except Exception as e:

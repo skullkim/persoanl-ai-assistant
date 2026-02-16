@@ -1,8 +1,11 @@
 import re
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from sqlmodel.ext.asyncio.session import AsyncSession
 from config.env_setting import settings
 from external.gmail_client import fetch_emails
+from external.db.model import News
+from external.db.repository import NewsRepository
 
 
 # 발신자별 소스 이름 및 카테고리 매핑
@@ -96,3 +99,35 @@ def get_news_from_emails(offset_days: int = 0, count_days: int = 3) -> list[dict
     all_news.sort(key=lambda x: x["date"], reverse=True)
 
     return all_news
+
+
+async def save_news_if_not_exists(news_items: list[dict], session: AsyncSession) -> int:
+    """중복되지 않는 뉴스만 저장합니다."""
+    if not news_items:
+        return 0
+
+    saved = 0
+    skipped = 0
+    for item in news_items:
+        title = item["title"]
+        upload_date = item.get("date", "")
+
+        if await NewsRepository.exists_by_title_and_upload_date(title, upload_date, session):
+            skipped += 1
+            continue
+
+        news = News(
+            title=title,
+            summary=item.get("summary", ""),
+            content=item.get("content", ""),
+            category=item.get("category", ""),
+            upload_date=upload_date,
+            source=item.get("source", ""),
+        )
+        await NewsRepository.save(news, session)
+        saved += 1
+
+    if skipped > 0:
+        print(f"[뉴스] 중복 {skipped}개 건너뜀")
+
+    return saved

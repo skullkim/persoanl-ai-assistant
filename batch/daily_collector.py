@@ -16,10 +16,9 @@ cron 설정 (매일 오전 9시 실행 예시):
 import asyncio
 from datetime import datetime
 
-from service.news_service import get_news_from_emails
-from service.youtube_service import get_youtube_videos
+from service.news_service import get_news_from_emails, save_news_if_not_exists
+from service.youtube_service import get_youtube_videos, save_videos_if_not_exists
 from external.db import init_db, close_db, transactional
-from external.db.repository import NewsRepository, VideoRepository
 
 
 @transactional
@@ -31,7 +30,7 @@ async def collect_news(session=None) -> int:
     print(f"[뉴스] {len(news_items)}개 조회됨")
 
     if news_items:
-        saved = await NewsRepository.save_all(news_items, session)
+        saved = await save_news_if_not_exists(news_items, session)
         print(f"[뉴스] {saved}개 저장됨")
         return saved
     return 0
@@ -46,7 +45,7 @@ async def collect_youtube(session=None) -> int:
     print(f"[유튜브] {len(videos)}개 조회됨")
 
     if videos:
-        saved = await VideoRepository.save_all(videos, session)
+        saved = await save_videos_if_not_exists(videos, session)
         print(f"[유튜브] {saved}개 저장됨")
         return saved
     return 0

@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, timezone
+from sqlmodel.ext.asyncio.session import AsyncSession
 from config.env_setting import settings
 from external.youtube_client import fetch_channel_videos, fetch_video_transcript
+from external.db.model import Video
+from external.db.repository import VideoRepository
 
 
 def _parse_published_date(published_at: str) -> tuple[str, datetime | None]:
@@ -82,3 +85,37 @@ def get_youtube_videos(offset_days: int = 0, count_days: int = 3) -> list[dict]:
     all_videos.sort(key=lambda x: x["date"], reverse=True)
 
     return all_videos
+
+
+async def save_videos_if_not_exists(videos: list[dict], session: AsyncSession) -> int:
+    """중복되지 않는 영상만 저장합니다."""
+    if not videos:
+        return 0
+
+    saved = 0
+    skipped = 0
+    for video in videos:
+        title = video["title"]
+        upload_date = video.get("date", "")
+
+        if await VideoRepository.exists_by_title_and_upload_date(title, upload_date, session):
+            skipped += 1
+            continue
+
+        v = Video(
+            title=title,
+            channel_name=video.get("channelName", ""),
+            thumbnail_url=video.get("thumbnailUrl", ""),
+            video_url=video.get("videoUrl", ""),
+            upload_date=upload_date,
+            subtitle=video.get("subtitle"),
+            summary=video.get("summary"),
+            highlights=video.get("highlights", []),
+        )
+        await VideoRepository.save(v, session)
+        saved += 1
+
+    if skipped > 0:
+        print(f"[유튜브] 중복 {skipped}개 건너뜀")
+
+    return saved

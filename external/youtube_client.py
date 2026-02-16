@@ -1,8 +1,13 @@
+import time
 from datetime import datetime
 from googleapiclient.discovery import build
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound, RequestBlocked
 from config.env_setting import settings
+
+TRANSCRIPT_DELAY_SEC = 3
+TRANSCRIPT_MAX_RETRIES = 3
+TRANSCRIPT_RETRY_DELAY_SEC = 10
 
 
 def get_youtube_service():
@@ -79,19 +84,29 @@ def fetch_channel_videos(channel_handle: str, max_results: int = 10,
 
 
 def fetch_video_transcript(video_id: str, languages: list[str] = None) -> str | None:
-    """영상의 자막을 가져옵니다."""
+    """영상의 자막을 가져옵니다. IP 차단 시 딜레이 후 재시도합니다."""
     if languages is None:
         languages = ["ko", "en"]
 
-    try:
-        ytt_api = YouTubeTranscriptApi()
-        transcript = ytt_api.fetch(video_id, languages=languages)
-        return " ".join([entry.text for entry in transcript])
+    for attempt in range(1, TRANSCRIPT_MAX_RETRIES + 1):
+        try:
+            time.sleep(TRANSCRIPT_DELAY_SEC)
+            ytt_api = YouTubeTranscriptApi()
+            transcript = ytt_api.fetch(video_id, languages=languages)
+            return " ".join([entry.text for entry in transcript])
 
-    except TranscriptsDisabled:
-        return None
-    except NoTranscriptFound:
-        return None
-    except Exception as e:
-        print(f"자막 조회 실패 ({video_id}): {e}")
-        return None
+        except TranscriptsDisabled:
+            return None
+        except NoTranscriptFound:
+            return None
+        except RequestBlocked:
+            if attempt < TRANSCRIPT_MAX_RETRIES:
+                wait = TRANSCRIPT_RETRY_DELAY_SEC * attempt
+                print(f"자막 IP 차단 ({video_id}), {wait}초 후 재시도 ({attempt}/{TRANSCRIPT_MAX_RETRIES})")
+                time.sleep(wait)
+            else:
+                print(f"자막 IP 차단 ({video_id}), 최대 재시도 초과 - 건너뜀")
+                return None
+        except Exception as e:
+            print(f"자막 조회 실패 ({video_id}): {e}")
+            return None
