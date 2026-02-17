@@ -62,6 +62,23 @@ class EmbeddingRepository:
         return result.all()
 
     @staticmethod
+    async def search_similar_with_score(
+        query_embedding: list[float],
+        session: AsyncSession,
+        limit: int = 5,
+        source_type: str | None = None,
+    ) -> list[tuple[Embedding, float]]:
+        """유사한 임베딩을 거리 점수와 함께 검색합니다."""
+        distance = Embedding.embedding.cosine_distance(query_embedding).label("distance")
+        stmt = select(Embedding, distance).order_by(distance).limit(limit)
+
+        if source_type:
+            stmt = stmt.where(Embedding.source_type == source_type)
+
+        result = await session.exec(stmt)
+        return [(row[0], row[1]) for row in result.all()]
+
+    @staticmethod
     async def delete(embedding_id: int, session: AsyncSession) -> bool:
         """임베딩을 삭제합니다."""
         embedding = await session.get(Embedding, embedding_id)

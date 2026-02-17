@@ -8,7 +8,7 @@ cron 또는 스케줄러를 통해 하루에 한 번 실행됩니다.
     python -m batch.daily_collector
 
 배치 실행:
-    APP_ENV=dev python -m batch.daily_collector그
+    APP_ENV=dev python -m batch.daily_collector
 
 cron 설정 (매일 오전 9시 실행 예시):
     0 9 * * * cd /path/to/project && APP_ENV=dev python -m batch.daily_collector
@@ -28,7 +28,7 @@ async def collect_news(session=None) -> int:
     """오늘의 뉴스 피드를 수집하여 저장합니다."""
     print("[뉴스] 수집 시작...")
 
-    news_items = get_news_from_emails(offset_days=0, count_days=1)
+    news_items = await get_news_from_emails(session, offset_days=0, count_days=1)
     print(f"[뉴스] {len(news_items)}개 조회됨")
 
     if news_items:
@@ -58,7 +58,7 @@ async def collect_rss_news(session=None) -> int:
     """RSS 피드에서 뉴스를 수집하여 저장합니다."""
     print("[RSS] 수집 시작...")
 
-    news_items = get_news_from_rss(offset_days=0, count_days=3)
+    news_items = await get_news_from_rss(session, offset_days=0, count_days=3)
     print(f"[RSS] {len(news_items)}개 조회됨")
 
     if news_items:

@@ -1,6 +1,8 @@
 from sqlmodel import select
+from sqlalchemy import and_
 from sqlmodel.ext.asyncio.session import AsyncSession
 from external.db.model import News
+from external.db.model import Embedding
 
 
 class NewsRepository:
@@ -78,6 +80,25 @@ class NewsRepository:
             select(News)
             .where(News.upload_date == upload_date)
             .order_by(News.created_at.desc())
+        )
+        result = await session.exec(stmt)
+        return result.all()
+
+    @staticmethod
+    async def find_not_embedded(session: AsyncSession, limit: int = 500) -> list[News]:
+        """아직 임베딩되지 않은 뉴스를 조회합니다."""
+        stmt = (
+            select(News)
+            .outerjoin(
+                Embedding,
+                and_(
+                    Embedding.source_type == "news",
+                    Embedding.source_id == News.id,
+                ),
+            )
+            .where(Embedding.id.is_(None))
+            .order_by(News.id)
+            .limit(limit)
         )
         result = await session.exec(stmt)
         return result.all()

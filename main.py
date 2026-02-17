@@ -10,6 +10,7 @@ from controller.YoutubeController import router as youtube_router
 from controller.InvestmentController import router as investment_router
 from controller.EmailController import router as email_router
 from controller.HealthController import router as health_router
+from controller.AdvisorController import router as advisor_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,3 +43,4 @@ app.include_router(news_router)
 app.include_router(youtube_router)
 app.include_router(investment_router)
 app.include_router(email_router)
+app.include_router(advisor_router)

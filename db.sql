@@ -16,26 +16,26 @@ CREATE TABLE news (
 );
 
 -- ============================================
--- 뉴스 일일 요약
+-- 뉴스 일일 정리
 -- ============================================
-CREATE TABLE news_summary (
+CREATE TABLE news_organize (
   id BIGSERIAL PRIMARY KEY,
   summary_date VARCHAR NOT NULL,
   category VARCHAR,
-  summary TEXT NOT NULL,
+  content TEXT NOT NULL,
   source_news_ids BIGINT[],
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-COMMENT ON TABLE news_summary IS '뉴스 일일 요약';
-COMMENT ON COLUMN news_summary.id IS '요약 고유 식별자';
-COMMENT ON COLUMN news_summary.summary_date IS '요약 대상 날짜 (YYYY.MM.DD)';
-COMMENT ON COLUMN news_summary.category IS '카테고리 (Economy, Tech 등)';
-COMMENT ON COLUMN news_summary.summary IS '일일 요약 내용';
-COMMENT ON COLUMN news_summary.source_news_ids IS '요약에 포함된 news ID 배열';
-COMMENT ON COLUMN news_summary.created_at IS '레코드 생성 시간';
-COMMENT ON COLUMN news_summary.updated_at IS '레코드 수정 시간';
+COMMENT ON TABLE news_organize IS '뉴스 일일 정리 (주제별 통합 브리핑)';
+COMMENT ON COLUMN news_organize.id IS '정리 고유 식별자';
+COMMENT ON COLUMN news_organize.summary_date IS '정리 대상 날짜 (YYYY.MM.DD)';
+COMMENT ON COLUMN news_organize.category IS '카테고리 (Economy, Tech 등)';
+COMMENT ON COLUMN news_organize.content IS '일일 정리 내용';
+COMMENT ON COLUMN news_organize.source_news_ids IS '정리에 포함된 news ID 배열';
+COMMENT ON COLUMN news_organize.created_at IS '레코드 생성 시간';
+COMMENT ON COLUMN news_organize.updated_at IS '레코드 수정 시간';
 
 COMMENT ON TABLE news IS '뉴스레터 원문 데이터';
 COMMENT ON COLUMN news.id IS '뉴스 고유 식별자';
@@ -154,3 +154,88 @@ ON embeddings USING hnsw (embedding vector_cosine_ops);
 
 -- 소스별 조회 인덱스
 CREATE INDEX embeddings_source_idx ON embeddings(source_type, source_id);
+
+-- ============================================
+-- PDF 청크 테이블
+-- ============================================
+CREATE TABLE pdf_chunks (
+  id BIGSERIAL PRIMARY KEY,
+  document_id BIGINT NOT NULL REFERENCES pdf_documents(id),
+  chunk_index INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  page_start INTEGER,
+  page_end INTEGER,
+  token_count INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE pdf_chunks IS 'PDF 문서 청크 데이터';
+COMMENT ON COLUMN pdf_chunks.id IS '청크 고유 식별자';
+COMMENT ON COLUMN pdf_chunks.document_id IS 'PDF 문서 ID (pdf_documents.id FK)';
+COMMENT ON COLUMN pdf_chunks.chunk_index IS '청크 순서 인덱스';
+COMMENT ON COLUMN pdf_chunks.content IS '청크 텍스트 내용';
+COMMENT ON COLUMN pdf_chunks.page_start IS '시작 페이지';
+COMMENT ON COLUMN pdf_chunks.page_end IS '종료 페이지';
+COMMENT ON COLUMN pdf_chunks.token_count IS '토큰 수';
+COMMENT ON COLUMN pdf_chunks.created_at IS '레코드 생성 시간';
+
+-- ============================================
+-- 일일 섹터 추천 리포트 테이블
+-- ============================================
+CREATE TABLE daily_reports (
+  id BIGSERIAL PRIMARY KEY,
+  report_date VARCHAR NOT NULL UNIQUE,
+  content TEXT NOT NULL,
+  sectors JSONB,
+  source_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE daily_reports IS '일일 섹터 추천 리포트';
+COMMENT ON COLUMN daily_reports.id IS '리포트 고유 식별자';
+COMMENT ON COLUMN daily_reports.report_date IS '리포트 날짜 (YYYY.MM.DD)';
+COMMENT ON COLUMN daily_reports.content IS '리포트 본문';
+COMMENT ON COLUMN daily_reports.sectors IS '섹터별 추천 데이터 (JSONB)';
+COMMENT ON COLUMN daily_reports.source_count IS '분석 소스 수';
+COMMENT ON COLUMN daily_reports.created_at IS '레코드 생성 시간';
+COMMENT ON COLUMN daily_reports.updated_at IS '레코드 수정 시간';
+
+-- ============================================
+-- 뉴스 소스 관리 테이블
+-- ============================================
+CREATE TABLE news_sources (
+  id BIGSERIAL PRIMARY KEY,
+  type VARCHAR NOT NULL,          -- 'email' | 'rss'
+  identifier VARCHAR NOT NULL,    -- 이메일 주소 또는 RSS URL
+  source_name VARCHAR NOT NULL,   -- '머니레터', 'Ars Technica' 등
+  category VARCHAR NOT NULL,      -- 'Economy', 'Tech' 등
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(type, identifier)
+);
+
+COMMENT ON TABLE news_sources IS '뉴스 소스 관리 (이메일 발신자, RSS 피드)';
+COMMENT ON COLUMN news_sources.id IS '소스 고유 식별자';
+COMMENT ON COLUMN news_sources.type IS '소스 타입 (email, rss)';
+COMMENT ON COLUMN news_sources.identifier IS '이메일 주소 또는 RSS URL';
+COMMENT ON COLUMN news_sources.source_name IS '소스 이름 (머니레터, Ars Technica 등)';
+COMMENT ON COLUMN news_sources.category IS '카테고리 (Economy, Tech 등)';
+COMMENT ON COLUMN news_sources.is_active IS '활성화 여부';
+COMMENT ON COLUMN news_sources.created_at IS '레코드 생성 시간';
+COMMENT ON COLUMN news_sources.updated_at IS '레코드 수정 시간';
+
+-- 초기 데이터: 이메일 뉴스레터
+INSERT INTO news_sources (type, identifier, source_name, category) VALUES
+  ('email', 'moneyletter@uppity.co.kr', '머니레터', 'Economy'),
+  ('email', 'byteteam365@mydailybyte.com', 'Daily Byte', 'Tech'),
+  ('email', 'miraklelab@mk.co.kr', '미라클레터', 'Economy'),
+  ('email', 'morning@ilbuntok.com', '일분톡', 'Economy'),
+  ('email', 'thecapitaledge+weeklyedge@substack.com', 'The Capital Edge', 'Economy');
+
+-- 초기 데이터: RSS 피드
+INSERT INTO news_sources (type, identifier, source_name, category) VALUES
+  ('rss', 'https://arstechnica.com/ai/feed', 'Ars Technica', 'Tech'),
+  ('rss', 'https://arstechnica.com/information-technology/feed', 'Ars Technica', 'Tech'),
+  ('rss', 'https://techcrunch.com/feed', 'TechCrunch', 'Tech');

@@ -3,29 +3,9 @@ from email.utils import parsedate_to_datetime
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from config.env_setting import settings
 from external.rss_client import fetch_rss_feed
-from external.db.model import News
-from external.db.repository import NewsRepository
-
-
-# RSS 피드 URL별 소스/카테고리 매핑
-FEED_CONFIG = {
-    "arstechnica.com/ai": {"source": "Ars Technica", "category": "Tech"},
-    "arstechnica.com/information-technology": {"source": "Ars Technica", "category": "Tech"},
-    "techcrunch.com": {"source": "TechCrunch", "category": "Tech"},
-}
-
-# 기본 매핑 (매칭 안 될 때)
-DEFAULT_CONFIG = {"source": "RSS", "category": "General"}
-
-
-def _get_feed_config(feed_url: str) -> dict:
-    """피드 URL에서 소스/카테고리 매핑을 찾습니다."""
-    for key, config in FEED_CONFIG.items():
-        if key in feed_url:
-            return config
-    return DEFAULT_CONFIG
+from external.db.model import News, NewsSource
+from external.db.repository import NewsRepository, NewsSourceRepository
 
 
 def _parse_rss_date(date_str: str) -> tuple[str, datetime | None]:
@@ -48,15 +28,16 @@ def _is_in_date_range(dt: datetime | None, start_date: datetime, end_date: datet
     return start_date <= dt < end_date
 
 
-def get_news_from_rss(offset_days: int = 0, count_days: int = 1) -> list[dict]:
+async def get_news_from_rss(session: AsyncSession, offset_days: int = 0, count_days: int = 1) -> list[dict]:
     """설정된 RSS 피드들에서 뉴스를 가져옵니다.
 
     Args:
+        session: DB 세션
         offset_days: 오늘로부터의 과거 오프셋 (0 = 오늘, 1 = 어제...)
         count_days: 가져올 날짜 범위 (예: 1이면 1일치)
     """
-    feed_urls = settings.RSS_FEED_URLS
-    if not feed_urls:
+    sources = await NewsSourceRepository.find_active_by_type("rss", session)
+    if not sources:
         return []
 
     # 날짜 범위 계산 (timezone-aware)
@@ -64,14 +45,11 @@ def get_news_from_rss(offset_days: int = 0, count_days: int = 1) -> list[dict]:
     end_date = today - timedelta(days=offset_days) + timedelta(days=1)
     start_date = end_date - timedelta(days=count_days)
 
-    urls = [u.strip() for u in feed_urls.split(",") if u.strip()]
     all_news = []
 
-    for url in urls:
-        config = _get_feed_config(url)
-
+    for source in sources:
         try:
-            articles = fetch_rss_feed(url)
+            articles = fetch_rss_feed(source.identifier)
             for article in articles:
                 date_str, dt = _parse_rss_date(article.get("published", ""))
                 if not _is_in_date_range(dt, start_date, end_date):
@@ -81,12 +59,12 @@ def get_news_from_rss(offset_days: int = 0, count_days: int = 1) -> list[dict]:
                 all_news.append({
                     "title": article.get("title", ""),
                     "content": content,
-                    "category": config["category"],
+                    "category": source.category,
                     "date": date_str,
-                    "source": config["source"],
+                    "source": source.source_name,
                 })
         except Exception as e:
-            print(f"RSS 피드 수집 실패 ({url}): {e}")
+            print(f"RSS 피드 수집 실패 ({source.identifier}): {e}")
             continue
 
     # 날짜 기준 정렬 (최신순)

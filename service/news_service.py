@@ -2,20 +2,9 @@ import re
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from sqlmodel.ext.asyncio.session import AsyncSession
-from config.env_setting import settings
 from external.gmail_client import fetch_emails
-from external.db.model import News
-from external.db.repository import NewsRepository
-
-
-# 발신자별 소스 이름 및 카테고리 매핑
-SENDER_CONFIG = {
-    "moneyletter@uppity.co.kr": {"source": "머니레터", "category": "Economy"},
-    "byteteam365@mydailybyte.com": {"source": "Daily Byte", "category": "Tech"},
-    "miraklelab@mk.co.kr": {"source": "미라클레터", "category": "Economy"},
-    "morning@ilbuntok.com": {"source": "일분톡", "category": "Economy"},
-    "thecapitaledge+weeklyedge@substack.com": {"source": "The Capital Edge", "category": "Economy"},
-}
+from external.db.model import News, NewsSource
+from external.db.repository import NewsRepository, NewsSourceRepository
 
 
 def _parse_date(date_str: str) -> tuple[str, datetime | None]:
@@ -35,19 +24,17 @@ def _extract_sender_email(from_header: str) -> str:
     return from_header.lower().strip()
 
 
-def _email_to_news_item(email: dict) -> tuple[dict, datetime | None]:
+def _email_to_news_item(email: dict, source: NewsSource) -> tuple[dict, datetime | None]:
     """이메일을 뉴스 아이템으로 변환합니다."""
-    sender_email = _extract_sender_email(email.get("sender", ""))
-    config = SENDER_CONFIG.get(sender_email, {"source": "뉴스레터", "category": "General"})
     date_str, dt = _parse_date(email.get("date", ""))
 
     news_item = {
         "id": email["id"],
         "title": email.get("subject", "(제목 없음)"),
         "content": email.get("body", ""),
-        "category": config["category"],
+        "category": source.category,
         "date": date_str,
-        "source": config["source"],
+        "source": source.source_name,
     }
     return news_item, dt
 
@@ -59,16 +46,20 @@ def _is_in_date_range(dt: datetime | None, start_date: datetime, end_date: datet
     return start_date <= dt < end_date
 
 
-def get_news_from_emails(offset_days: int = 0, count_days: int = 3) -> list[dict]:
+async def get_news_from_emails(session: AsyncSession, offset_days: int = 0, count_days: int = 3) -> list[dict]:
     """설정된 발신자들로부터 뉴스를 가져옵니다.
 
     Args:
+        session: DB 세션
         offset_days: 오늘로부터의 과거 오프셋 (0 = 오늘, 1 = 어제...)
         count_days: 가져올 날짜 범위 (예: 3이면 3일치)
     """
-    sender_emails = settings.NEWS_SENDER_EMAILS
-    if not sender_emails:
+    sources = await NewsSourceRepository.find_active_by_type("email", session)
+    if not sources:
         return []
+
+    # identifier(이메일) → NewsSource 매핑
+    source_map = {s.identifier: s for s in sources}
 
     # 날짜 범위 계산 (timezone-aware)
     today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -79,19 +70,20 @@ def get_news_from_emails(offset_days: int = 0, count_days: int = 3) -> list[dict
     after_str = start_date.strftime("%Y/%m/%d")
     before_str = end_date.strftime("%Y/%m/%d")
 
-    senders = [s.strip() for s in sender_emails.split(",") if s.strip()]
     all_news = []
 
-    for sender in senders:
+    for source in sources:
         try:
-            emails = fetch_emails(sender, max_results=20,
+            emails = fetch_emails(source.identifier, max_results=20,
                                   after_date=after_str, before_date=before_str)
             for email in emails:
-                news_item, dt = _email_to_news_item(email)
+                sender_email = _extract_sender_email(email.get("sender", ""))
+                matched_source = source_map.get(sender_email, source)
+                news_item, dt = _email_to_news_item(email, matched_source)
                 if _is_in_date_range(dt, start_date, end_date):
                     all_news.append(news_item)
         except Exception as e:
-            print(f"Failed to fetch emails from {sender}: {e}")
+            print(f"Failed to fetch emails from {source.identifier}: {e}")
             continue
 
     # 날짜 기준 정렬 (최신순)

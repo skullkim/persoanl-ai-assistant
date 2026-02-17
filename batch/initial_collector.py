@@ -21,7 +21,7 @@ from external.db import init_db, close_db, transactional
 @transactional
 async def collect_news_for_day(offset_days: int, session=None) -> int:
     """특정 일자의 뉴스 피드를 수집하여 저장합니다."""
-    news_items = get_news_from_emails(offset_days=offset_days, count_days=1)
+    news_items = await get_news_from_emails(session, offset_days=offset_days, count_days=1)
 
     if news_items:
         saved = await save_news_if_not_exists(news_items, session)

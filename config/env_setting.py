@@ -12,11 +12,12 @@ class Settings(BaseSettings):
     # Slack
     SLACK_WEBHOOK_URL: str = ""
     SLACK_SUMMARY_WEBHOOK_URL: str = ""
+    SLACK_REPORT_WEBHOOK_URL: str = ""
 
     # Ollama
     OLLAMA_HOST: str = "http://localhost:11434"
-    LLM_MODEL: str = "qwen2.5:32b"
-    EMBED_MODEL: str = "bge-m3"
+    LLM_MODEL: str = "gemma3:12b"
+    EMBED_MODEL: str = "snowflake-arctic-embed2"
 
     # Database
     DB_HOST: str = "localhost"
