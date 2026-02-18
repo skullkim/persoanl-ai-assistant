@@ -54,7 +54,7 @@ async def step_collect(session=None) -> dict:
 
     # 유튜브
     print("[수집] 유튜브 수집 시작...")
-    videos = get_youtube_videos(offset_days=0, count_days=1)
+    videos = await get_youtube_videos(session, offset_days=0, count_days=1)
     youtube_count = 0
     if videos:
         youtube_count = await save_videos_if_not_exists(videos, session)
@@ -68,7 +68,22 @@ async def step_collect(session=None) -> dict:
         rss_count = await save_rss_news_if_not_exists(rss_items, session)
     print(f"[수집] RSS {rss_count}개 저장")
 
-    return {"news": news_count, "youtube": youtube_count, "rss": rss_count}
+    # 환율
+    from service.market_data_service import collect_exchange_rate, collect_fear_greed_index
+
+    print("[수집] 환율 수집 시작...")
+    exchange_count = await collect_exchange_rate(session)
+    print(f"[수집] 환율 {exchange_count}건 저장")
+
+    # 공포/탐욕 지수
+    print("[수집] 공포/탐욕 지수 수집 시작...")
+    fear_greed_count = await collect_fear_greed_index(session)
+    print(f"[수집] 공포/탐욕 지수 {fear_greed_count}건 저장")
+
+    return {
+        "news": news_count, "youtube": youtube_count, "rss": rss_count,
+        "exchange_rate": exchange_count, "fear_greed": fear_greed_count,
+    }
 
 
 # ──────────────────────────────────────────────

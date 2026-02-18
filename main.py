@@ -5,10 +5,6 @@ import logging
 from config.cors import add_cors_middleware
 from external.db import init_db, close_db
 
-from controller.NewsController import router as news_router
-from controller.YoutubeController import router as youtube_router
-from controller.InvestmentController import router as investment_router
-from controller.EmailController import router as email_router
 from controller.HealthController import router as health_router
 from controller.AdvisorController import router as advisor_router
 
@@ -39,8 +35,4 @@ add_cors_middleware(app)
 
 # 컨트롤러 등록
 app.include_router(health_router)
-app.include_router(news_router)
-app.include_router(youtube_router)
-app.include_router(investment_router)
-app.include_router(email_router)
 app.include_router(advisor_router)

@@ -239,3 +239,81 @@ INSERT INTO news_sources (type, identifier, source_name, category) VALUES
   ('rss', 'https://arstechnica.com/ai/feed', 'Ars Technica', 'Tech'),
   ('rss', 'https://arstechnica.com/information-technology/feed', 'Ars Technica', 'Tech'),
   ('rss', 'https://techcrunch.com/feed', 'TechCrunch', 'Tech');
+
+-- ============================================
+-- 환율 이력 (USD/KRW)
+-- ============================================
+CREATE TABLE exchange_rate_history (
+  id BIGSERIAL PRIMARY KEY,
+  record_date VARCHAR NOT NULL,
+  rate DECIMAL(12,4) NOT NULL,
+  previous_rate DECIMAL(12,4),
+  change_amount DECIMAL(12,4),
+  change_percentage DECIMAL(8,4),
+  source VARCHAR DEFAULT 'Yahoo Finance',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(record_date)
+);
+
+COMMENT ON TABLE exchange_rate_history IS 'USD/KRW 환율 이력';
+COMMENT ON COLUMN exchange_rate_history.id IS '환율 이력 고유 식별자';
+COMMENT ON COLUMN exchange_rate_history.record_date IS '기록 날짜 (YYYY-MM-DD)';
+COMMENT ON COLUMN exchange_rate_history.rate IS '종가 환율';
+COMMENT ON COLUMN exchange_rate_history.previous_rate IS '전일 종가 환율';
+COMMENT ON COLUMN exchange_rate_history.change_amount IS '변동 금액';
+COMMENT ON COLUMN exchange_rate_history.change_percentage IS '변동률 (%)';
+COMMENT ON COLUMN exchange_rate_history.source IS '데이터 출처';
+COMMENT ON COLUMN exchange_rate_history.created_at IS '레코드 생성 시간';
+COMMENT ON COLUMN exchange_rate_history.updated_at IS '레코드 수정 시간';
+
+-- ============================================
+-- 공포/탐욕 지수
+-- ============================================
+CREATE TABLE fear_greed_index (
+  id BIGSERIAL PRIMARY KEY,
+  record_date VARCHAR NOT NULL,
+  value INTEGER NOT NULL,
+  label VARCHAR NOT NULL,
+  source VARCHAR DEFAULT 'CNN',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(record_date)
+);
+
+COMMENT ON TABLE fear_greed_index IS 'CNN 공포/탐욕 지수 이력';
+COMMENT ON COLUMN fear_greed_index.id IS '지수 이력 고유 식별자';
+COMMENT ON COLUMN fear_greed_index.record_date IS '기록 날짜 (YYYY-MM-DD)';
+COMMENT ON COLUMN fear_greed_index.value IS '공포/탐욕 지수 (0~100)';
+COMMENT ON COLUMN fear_greed_index.label IS '지수 라벨 (Extreme Fear/Fear/Neutral/Greed/Extreme Greed)';
+COMMENT ON COLUMN fear_greed_index.source IS '데이터 출처';
+COMMENT ON COLUMN fear_greed_index.created_at IS '레코드 생성 시간';
+COMMENT ON COLUMN fear_greed_index.updated_at IS '레코드 수정 시간';
+
+-- ============================================
+-- 유튜브 채널 소스 관리 테이블
+-- ============================================
+CREATE TABLE video_sources (
+  id BIGSERIAL PRIMARY KEY,
+  channel_handle VARCHAR NOT NULL UNIQUE,  -- '@TTimesTV' 등 채널 핸들
+  channel_name VARCHAR NOT NULL,           -- 'TTimesTV' 등 표시 이름
+  category VARCHAR NOT NULL,               -- 'Economy', 'Tech' 등
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE video_sources IS '유튜브 채널 소스 관리';
+COMMENT ON COLUMN video_sources.id IS '소스 고유 식별자';
+COMMENT ON COLUMN video_sources.channel_handle IS '유튜브 채널 핸들 (@channel)';
+COMMENT ON COLUMN video_sources.channel_name IS '채널 표시 이름';
+COMMENT ON COLUMN video_sources.category IS '카테고리 (Economy, Tech 등)';
+COMMENT ON COLUMN video_sources.is_active IS '활성화 여부';
+COMMENT ON COLUMN video_sources.created_at IS '레코드 생성 시간';
+COMMENT ON COLUMN video_sources.updated_at IS '레코드 수정 시간';
+
+-- 초기 데이터: 유튜브 채널
+INSERT INTO video_sources (channel_handle, channel_name, category) VALUES
+  ('@TTimesTV', 'TTimesTV', 'Economy'),
+  ('@unrealtech', 'unrealtech', 'Tech'),
+  ('@softdragon', 'softdragon', 'Tech');

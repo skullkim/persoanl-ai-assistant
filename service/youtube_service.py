@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from sqlmodel.ext.asyncio.session import AsyncSession
-from config.env_setting import settings
 from external.youtube_client import fetch_channel_videos, fetch_video_transcript
 from external.db.model import Video
-from external.db.repository import VideoRepository
+from external.db.repository import VideoRepository, VideoSourceRepository
 
 
 def _parse_published_date(published_at: str) -> tuple[str, datetime | None]:
@@ -23,7 +22,7 @@ def _extract_highlights(transcript: str, max_keywords: int = 5) -> list[str]:
 
 
 
-def _video_to_response(video: dict, transcript: str | None) -> dict:
+def _video_to_response(video: dict, transcript: str | None, source_name: str | None = None) -> dict:
     """영상 데이터를 API 응답 형식으로 변환합니다."""
     date_str, _ = _parse_published_date(video["published_at"])
 
@@ -37,18 +36,20 @@ def _video_to_response(video: dict, transcript: str | None) -> dict:
         "subtitle": transcript if transcript else None,
         "summary": None,
         "highlights": _extract_highlights(transcript) if transcript else [],
+        "source": source_name,
     }
 
 
-def get_youtube_videos(offset_days: int = 0, count_days: int = 3) -> list[dict]:
-    """설정된 채널들에서 영상을 가져옵니다.
+async def get_youtube_videos(session: AsyncSession, offset_days: int = 0, count_days: int = 1) -> list[dict]:
+    """DB에 등록된 유튜브 채널에서 영상을 가져옵니다.
 
     Args:
+        session: DB 세션
         offset_days: 오늘로부터의 과거 오프셋 (0 = 오늘, 1 = 어제...)
         count_days: 가져올 날짜 범위 (예: 3이면 3일치)
     """
-    channel_handles = settings.YOUTUBE_CHANNEL_HANDLES
-    if not channel_handles:
+    sources = await VideoSourceRepository.find_active(session)
+    if not sources:
         return []
 
     # 날짜 범위 계산 (timezone-aware)
@@ -60,25 +61,23 @@ def get_youtube_videos(offset_days: int = 0, count_days: int = 3) -> list[dict]:
     after_str = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
     before_str = end_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    channels = [c.strip() for c in channel_handles.split(",") if c.strip()]
     all_videos = []
 
-    for channel in channels:
+    for source in sources:
         try:
-            videos = fetch_channel_videos(channel, max_results=20,
+            videos = fetch_channel_videos(source.channel_handle, max_results=20,
                                           published_after=after_str,
                                           published_before=before_str)
 
             for video in videos:
-
                 # 자막 가져오기
                 transcript = fetch_video_transcript(video["id"])
 
-                video_response = _video_to_response(video, transcript)
+                video_response = _video_to_response(video, transcript, source.channel_name)
                 all_videos.append(video_response)
 
         except Exception as e:
-            print(f"Failed to fetch videos from {channel}: {e}")
+            print(f"Failed to fetch videos from {source.channel_handle}: {e}")
             continue
 
     # 날짜 기준 정렬 (최신순)
@@ -111,6 +110,7 @@ async def save_videos_if_not_exists(videos: list[dict], session: AsyncSession) -
             subtitle=video.get("subtitle"),
             summary=video.get("summary"),
             highlights=video.get("highlights", []),
+            source=video.get("source"),
         )
         await VideoRepository.save(v, session)
         saved += 1

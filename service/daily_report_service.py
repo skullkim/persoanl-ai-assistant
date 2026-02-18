@@ -1,13 +1,12 @@
+import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
 
 import httpx
-from langchain_core.messages import SystemMessage, HumanMessage
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from config.env_setting import settings
-from external.ollama_client import get_llm
 from external.db.model import News, DailyReport
 from external.db.repository import NewsRepository, DailyReportRepository
 
@@ -56,6 +55,29 @@ USER_PROMPT_TEMPLATE = """\
 """
 
 SLACK_MAX_LEN = 3900
+CLI_TIMEOUT = 600  # Claude CLI 응답 대기 최대 10분 (30일치 분석)
+
+
+async def _call_claude_cli(prompt: str) -> str:
+    """Claude CLI를 호출하여 답변을 받습니다."""
+    process = await asyncio.create_subprocess_exec(
+        "claude", "-p", prompt,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    try:
+        stdout, stderr = await asyncio.wait_for(
+            process.communicate(), timeout=CLI_TIMEOUT
+        )
+    except asyncio.TimeoutError:
+        process.kill()
+        raise RuntimeError(f"Claude CLI 응답 시간 초과 ({CLI_TIMEOUT}초)")
+
+    if process.returncode != 0:
+        error_msg = stderr.decode().strip()
+        raise RuntimeError(f"Claude CLI 오류 (code={process.returncode}): {error_msg}")
+
+    return stdout.decode().strip()
 
 
 def _format_articles_for_report(articles: list[News]) -> str:
@@ -105,7 +127,7 @@ def _parse_sectors_json(response_text: str) -> dict | None:
         return None
 
 
-async def generate_daily_report(session: AsyncSession, days: int = 3) -> tuple[str, int]:
+async def generate_daily_report(session: AsyncSession, days: int = 30) -> tuple[str, int]:
     """최근 N일 뉴스를 분석하여 섹터 추천 리포트를 생성합니다.
 
     Returns:
@@ -134,13 +156,8 @@ async def generate_daily_report(session: AsyncSession, days: int = 3) -> tuple[s
         articles_text=articles_text,
     )
 
-    llm = get_llm()
-    messages = [
-        SystemMessage(content=SYSTEM_PROMPT),
-        HumanMessage(content=user_prompt),
-    ]
-    response = await llm.ainvoke(messages)
-    report_text = response.content
+    full_prompt = SYSTEM_PROMPT + "\n\n" + user_prompt
+    report_text = await _call_claude_cli(full_prompt)
 
     # JSON 파싱
     sectors_data = _parse_sectors_json(report_text)

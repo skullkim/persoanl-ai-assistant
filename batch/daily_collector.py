@@ -43,7 +43,7 @@ async def collect_youtube(session=None) -> int:
     """오늘의 유튜브 영상을 수집하여 저장합니다."""
     print("[유튜브] 수집 시작...")
 
-    videos = get_youtube_videos(offset_days=0, count_days=1)
+    videos = await get_youtube_videos(session, offset_days=0, count_days=1)
     print(f"[유튜브] {len(videos)}개 조회됨")
 
     if videos:
