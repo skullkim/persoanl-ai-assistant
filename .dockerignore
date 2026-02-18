@@ -1,0 +1,15 @@
+.git
+.gitignore
+.idea
+__pycache__
+**/__pycache__
+*.pyc
+.env*
+data/
+docker/
+README.md
+CLAUDE.md
+LICENSE
+run_server.sh
+.dockerignore
+.python-version

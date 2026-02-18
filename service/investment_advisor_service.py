@@ -3,9 +3,8 @@ import logging
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from config.env_setting import settings
 from external.ollama_client import get_llm
-from external import google_search_client
+from external import web_search_client
 from service.embedding_service import search_similar_context
 
 logger = logging.getLogger(__name__)
@@ -100,10 +99,8 @@ async def ask_advisor(
         query=question, session=session, limit=context_limit
     )
 
-    # 2. 웹 검색 (GOOGLE_CSE_ID가 설정된 경우에만)
-    web_results = []
-    if settings.GOOGLE_CSE_ID:
-        web_results = await google_search_client.search(query=question, limit=5)
+    # 2. 웹 검색 (DuckDuckGo, 항상 실행)
+    web_results = await web_search_client.search(query=question, limit=5)
 
     # 3. 프롬프트 생성
     context_text = _format_context(contexts) if contexts else "(관련 컨텍스트 없음)"

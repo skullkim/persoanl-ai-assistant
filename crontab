@@ -1,0 +1,1 @@
+30 6 * * * python -m batch.daily_pipeline

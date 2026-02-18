@@ -22,5 +22,4 @@ def get_current_model_info() -> dict:
         "llm_model": settings.LLM_MODEL,
         "embed_model": settings.EMBED_MODEL,
         "ollama_host": settings.OLLAMA_HOST,
-        "environment": settings.APP_ENV,
     }

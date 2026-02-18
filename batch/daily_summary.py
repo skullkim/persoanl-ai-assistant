@@ -2,7 +2,6 @@
 일일 뉴스 정리 배치
 
 당일 수집된 뉴스레터를 Ollama LLM으로 주제별 통합 정리하고 Slack으로 발송합니다.
-daily_collector 배치 실행 후 별도로 실행합니다.
 
 사용법:
     python -m batch.daily_summary

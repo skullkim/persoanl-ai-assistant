@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import logging
 
-from config.cors import add_cors_middleware
 from config.env_setting import settings
 from external.db import init_db, close_db
 from external import slack_bot
@@ -43,7 +42,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-add_cors_middleware(app)
 
 # 컨트롤러 등록
 app.include_router(health_router)
