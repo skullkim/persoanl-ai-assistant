@@ -7,12 +7,15 @@ class Settings(BaseSettings):
     NEWS_SENDER_EMAILS: str = ""  # 콤마로 구분된 발신자 이메일 목록
     YOUTUBE_API_KEY: str = ""
     YOUTUBE_CHANNEL_HANDLES: str = ""  # 콤마로 구분된 채널 핸들 (@channel)
+    GOOGLE_CSE_ID: str = ""  # Google Custom Search Engine ID
     RSS_FEED_URLS: str = ""  # 콤마로 구분된 RSS 피드 URL
 
     # Slack
     SLACK_WEBHOOK_URL: str = ""
     SLACK_SUMMARY_WEBHOOK_URL: str = ""
     SLACK_REPORT_WEBHOOK_URL: str = ""
+    SLACK_BOT_TOKEN: str = ""   # xoxb-...
+    SLACK_APP_TOKEN: str = ""   # xapp-...
 
     # Ollama
     OLLAMA_HOST: str = "http://localhost:11434"

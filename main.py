@@ -3,7 +3,9 @@ from fastapi import FastAPI
 import logging
 
 from config.cors import add_cors_middleware
+from config.env_setting import settings
 from external.db import init_db, close_db
+from external import slack_bot
 
 from controller.HealthController import router as health_router
 from controller.AdvisorController import router as advisor_router
@@ -23,9 +25,19 @@ async def lifespan(app: FastAPI):
         logger.error(f"데이터베이스 초기화 실패: {e}")
         raise
 
+    # Slack 봇 시작 (토큰 미설정 시 스킵)
+    if settings.SLACK_BOT_TOKEN and settings.SLACK_APP_TOKEN:
+        try:
+            await slack_bot.start()
+        except Exception as e:
+            logger.error(f"Slack 봇 시작 실패: {e}")
+    else:
+        logger.info("Slack 봇 토큰 미설정 — 봇 시작 스킵")
+
     yield
 
     logger.info("서버 종료 중...")
+    await slack_bot.stop()
     await close_db()
     logger.info("서버 종료 완료")
 

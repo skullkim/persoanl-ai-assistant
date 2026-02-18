@@ -4,7 +4,7 @@ from config.env_setting import settings
 
 
 def get_llm() -> ChatOllama:
-    """요약용 ChatOllama 인스턴스를 반환합니다."""
+    """ChatOllama 인스턴스를 반환합니다."""
     return ChatOllama(
         base_url=settings.OLLAMA_HOST,
         model=settings.LLM_MODEL,
